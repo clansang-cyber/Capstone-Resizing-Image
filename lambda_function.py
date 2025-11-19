@@ -1,45 +1,57 @@
 import boto3
 from PIL import Image
 import io
-import os
+import json
 
 s3 = boto3.client('s3')
 
+DEST_BUCKET = 'capstone-new-image'
+
 def lambda_handler(event, context):
-    # Read event inputs
-    source_bucket = event['source_bucket']
-    destination_bucket = event['destination_bucket']
-    key = event['key']
-    width = event.get('width', 800)   # default width
-    height = event.get('height', 800) # default height
+    try:
+        # If triggered by API Gateway → event["body"] is a string
+        if "body" in event:
+            body = json.loads(event["body"])
+        else:
+            body = event
 
-    # Download the image from S3
-    image_object = s3.get_object(Bucket=source_bucket, Key=key)
-    image_content = image_object['Body'].read()
+        # Required fields
+        source_bucket = body["source_bucket"]
+        key = body["key"]
 
-    # Open and resize the image using Pillow
-    img = Image.open(io.BytesIO(image_content))
-    img = img.resize((width, height))
+        # Download the original image
+        response = s3.get_object(Bucket=source_bucket, Key=key)
+        image_bytes = response["Body"].read()
 
-    # Save resized image into memory
-    buffer = io.BytesIO()
-    img_format = img.format if img.format else "JPEG"
-    img.save(buffer, format=img_format)
-    buffer.seek(0)
+        # Load image via Pillow
+        with Image.open(io.BytesIO(image_bytes)) as img:
+            img.thumbnail((128, 128))
 
-    # Upload back to resized bucket
-    new_key = f"resized_{key}"
-    s3.put_object(
-        Bucket=destination_bucket,
-        Key=new_key,
-        Body=buffer,
-        ContentType=image_object['ContentType']
-    )
+            # Ensure format always exists (default to JPEG)
+            image_format = img.format if img.format else "JPEG"
 
-    return {
-        "status": "success",
-        "original_key": key,
-        "resized_key": new_key,
-        "width": width,
-        "height": height
-    }
+            # Save resized image into memory
+            buffer = io.BytesIO()
+            img.save(buffer, format=image_format)
+            buffer.seek(0)
+
+        # Save resized image
+        resized_key = f"resized-{key}"
+        s3.put_object(
+            Bucket=DEST_BUCKET,
+            Key=resized_key,
+            Body=buffer
+        )
+
+        # Step Functions-friendly output
+        return {
+            "status": "SUCCESS",
+            "resized_key": resized_key,
+            "message": f"Image resized successfully and saved as {resized_key}"
+        }
+
+    except Exception as e:
+        return {
+            "status": "ERROR",
+            "message": str(e)
+        }
