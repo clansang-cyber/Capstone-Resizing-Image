@@ -10,7 +10,9 @@
       "Next": "CheckResizeResult",
       "Catch": [
         {
-          "ErrorEquals": ["States.ALL"],
+          "ErrorEquals": [
+            "States.ALL"
+          ],
           "Next": "ResizeFailed"
         }
       ]
@@ -20,8 +22,13 @@
       "Choices": [
         {
           "Variable": "$.resizeResult.status",
-          "StringEquals": "success",
+          "StringEquals": "SUCCESS",
           "Next": "ResizeSuccessful"
+        },
+        {
+          "Variable": "$.resizeResult.status",
+          "StringEquals": "ERROR",
+          "Next": "ResizeFailed"
         }
       ],
       "Default": "ResizeFailed"
