@@ -65,12 +65,31 @@ Ensure Lambda runtime matches Pillow layer version (Python 3.9)
 Increase Lambda memory for large images to prevent OutOfMemory errors
 
 ## 🧪 Testing
+🔹 Test the API Gateway using Postman
+
+Open Postman and create a new POST request.
+
+Set the request URL to your API Gateway endpoint, for example:
+
+https://<api-id>.execute-api.<region>.amazonaws.com/upload
+
+Go to the Body tab → select binary → choose your image file.
+
+Click Send.
+
+You should receive a 200 OK response if the upload succeeded.
+
+Verify the original image appears in the capstone-image-upload bucket.
+
+🔹Test the Step Functions
 
 Start execution in the Step Functions console.
 
-Verify the resized image in capstone-new-image.
+Wait for the execution to complete.
 
-Check CloudWatch logs for Lambda execution details.
+Verify the resized image appears in capstone-new-image.
+
+Check CloudWatch Logs for Lambda execution details.
 
 ## 💡 Tips & Best Practices
 
@@ -80,13 +99,17 @@ Increase Lambda memory for large images to prevent OutOfMemory
 
 Use descriptive image filenames for easier tracking
 
-## 📂 Project Structure
+## 📁 Project Structure
 
-Capstone-Resizing-Image/
-├── lambda_function.py
-├── README.md
-├── Pillow-3-9-Layer.zip
-└── state_machine_definition.json
+capstone-image-upload – S3 bucket for original images
+
+capstone-new-image – S3 bucket for resized images
+
+capstoneResizeImage – Lambda function for resizing
+
+API Gateway – HTTP endpoint for image upload
+
+Step Functions – Workflow automation
 
 ## 🌟 Features
 
